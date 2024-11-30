@@ -6,20 +6,41 @@
 <div class="row mt-4">
     {% for book in books %}
     <div class="col-md-4 mb-4">
-        <div class="card">
+        <div class="card h-100">
+            {% if book.cover_url %}
+            <img src="{{ book.cover_url }}" class="card-img-top" alt="{{ book.title }}" style="height: 300px; object-fit: cover;">
+            {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ book.title }}</h5>
                 <h6 class="card-subtitle mb-2 text-muted">{{ book.author }}</h6>
-                <p class="card-text">ISBN: {{ book.isbn }}</p>
-                <p class="card-text">Status: <span class="badge {% if book.status == 'available' %}bg-success{% else %}bg-warning{% endif %}">{{ book.status }}</span></p>
                 
-                {% if book.qr_code %}
-                <img src="{{ url_for('static', filename='qr_codes/' + book.qr_code) }}" alt="QR Code" class="img-fluid mb-2" style="max-width: 150px;">
+                {% if book.description %}
+                <p class="card-text">{{ book.description[:150] }}...</p>
                 {% endif %}
                 
+                <p class="card-text">
+                    <small class="text-muted">
+                        {% if book.published_date %}Published: {{ book.published_date }}{% endif %}
+                    </small>
+                </p>
+                
+                <p class="card-text">
+                    <span class="badge {% if book.status == 'available' %}bg-success{% else %}bg-warning{% endif %}">
+                        {{ book.status }}
+                    </span>
+                    {% if book.average_rating %}
+                    <span class="ms-2">
+                        {% for _ in range(book.average_rating|int) %}⭐{% endfor %}
+                        ({{ book.average_rating }})
+                    </span>
+                    {% endif %}
+                </p>
+                
+                <a href="{{ url_for('book_detail', isbn=book.isbn) }}" class="btn btn-primary">View Details</a>
+                
                 {% if current_user.is_authenticated and book.status == 'available' %}
-                <form action="{{ url_for('lend_book', book_id=book.id) }}" method="POST">
-                    <button type="submit" class="btn btn-primary">Borrow Book</button>
+                <form action="{{ url_for('lend_book', book_id=book.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-outline-primary">Borrow</button>
                 </form>
                 {% endif %}
             </div>

@@ -6,16 +6,9 @@
         <h2>Add New Book</h2>
         <form method="POST">
             <div class="mb-3">
-                <label for="title" class="form-label">Title</label>
-                <input type="text" class="form-control" id="title" name="title" required>
-            </div>
-            <div class="mb-3">
-                <label for="author" class="form-label">Author</label>
-                <input type="text" class="form-control" id="author" name="author" required>
-            </div>
-            <div class="mb-3">
                 <label for="isbn" class="form-label">ISBN</label>
-                <input type="text" class="form-control" id="isbn" name="isbn" required>
+                <input type="text" class="form-control" id="isbn" name="isbn" required placeholder="Enter ISBN-10 or ISBN-13">
+                <div class="form-text">Enter the book's ISBN number and we'll automatically fetch its details.</div>
             </div>
             <button type="submit" class="btn btn-primary">Add Book</button>
         </form>

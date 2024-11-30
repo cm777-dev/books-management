@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import qrcode
 from datetime import datetime
 import os
+from services.book_service import BookService
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -13,6 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+book_service = BookService()
 
 # Models
 class User(UserMixin, db.Model):
@@ -28,6 +30,14 @@ class Book(db.Model):
     isbn = db.Column(db.String(13), unique=True)
     status = db.Column(db.String(20), default='available')
     qr_code = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    cover_url = db.Column(db.String(500))
+    published_date = db.Column(db.String(50))
+    publisher = db.Column(db.String(100))
+    page_count = db.Column(db.Integer)
+    average_rating = db.Column(db.Float)
+    categories = db.Column(db.String(200))
+    preview_link = db.Column(db.String(500))
 
 class Lending(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -46,13 +56,41 @@ def index():
     books = Book.query.all()
     return render_template('index.html', books=books)
 
+@app.route('/book/<isbn>')
+def book_detail(isbn):
+    book = Book.query.filter_by(isbn=isbn).first_or_404()
+    author_info = book_service.get_author_info(book.author)
+    reviews = book_service.get_book_reviews(isbn)
+    return render_template('book_detail.html', book=book, author_info=author_info, reviews=reviews)
+
 @app.route('/add_book', methods=['GET', 'POST'])
 @login_required
 def add_book():
     if request.method == 'POST':
-        title = request.form['title']
-        author = request.form['author']
         isbn = request.form['isbn']
+        
+        # Validate ISBN
+        if not book_service.validate_isbn(isbn):
+            flash('Invalid ISBN number', 'error')
+            return redirect(url_for('add_book'))
+            
+        # Get book details from various sources
+        book_details = book_service.get_book_details(isbn)
+        
+        # Create new book
+        book = Book(
+            title=book_details.get('title'),
+            author=', '.join(book_details.get('authors', [])),
+            isbn=isbn,
+            description=book_details.get('description'),
+            cover_url=book_details.get('cover_url'),
+            published_date=book_details.get('published_date'),
+            publisher=', '.join(book_details.get('publisher', [])),
+            page_count=book_details.get('page_count'),
+            average_rating=book_details.get('average_rating'),
+            categories=', '.join(book_details.get('categories', [])),
+            preview_link=book_details.get('preview_link')
+        )
         
         # Generate QR Code
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -64,15 +102,21 @@ def add_book():
         qr_filename = f'qr_code_{isbn}.png'
         qr_path = os.path.join('static', 'qr_codes', qr_filename)
         qr_image.save(qr_path)
+        book.qr_code = qr_filename
         
-        book = Book(title=title, author=author, isbn=isbn, qr_code=qr_filename)
         db.session.add(book)
         db.session.commit()
         
         flash('Book added successfully!', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('book_detail', isbn=isbn))
     
     return render_template('add_book.html')
+
+@app.route('/api/book/<isbn>')
+def api_book_details(isbn):
+    """API endpoint to get book details"""
+    book_details = book_service.get_book_details(isbn)
+    return jsonify(book_details)
 
 @app.route('/lend_book/<int:book_id>', methods=['POST'])
 @login_required
