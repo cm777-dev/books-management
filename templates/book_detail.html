@@ -11,9 +11,38 @@
             <div class="qr-code text-center">
                 <img src="{{ url_for('static', filename='qr_codes/' + book.qr_code) }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 150px;">
             </div>
-            <div class="book-status">
+            <div class="book-status mb-3">
                 <h5>Status: <span class="badge {% if book.status == 'available' %}bg-success{% else %}bg-warning{% endif %}">{{ book.status }}</span></h5>
             </div>
+            
+            <!-- Amazon-specific Information -->
+            {% if book.amazon_url %}
+            <div class="amazon-info card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <img src="{{ url_for('static', filename='images/amazon-logo.png') }}" alt="Amazon" style="height: 25px;">
+                        Amazon Details
+                    </h5>
+                    {% if book.price %}
+                    <p class="card-text">Price: {{ book.price }}</p>
+                    {% endif %}
+                    {% if book.prime_eligible %}
+                    <p class="card-text"><span class="badge bg-info">Prime Eligible</span></p>
+                    {% endif %}
+                    {% if book.amazon_rating %}
+                    <p class="card-text">
+                        Rating: 
+                        {% for _ in range(book.amazon_rating|int) %}⭐{% endfor %}
+                        ({{ book.amazon_rating }}/5)
+                    </p>
+                    {% endif %}
+                    {% if book.amazon_review_count %}
+                    <p class="card-text">{{ book.amazon_review_count }} reviews</p>
+                    {% endif %}
+                    <a href="{{ book.amazon_url }}" target="_blank" class="btn btn-warning">View on Amazon</a>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Book Details -->
@@ -34,6 +63,9 @@
                 {% endif %}
                 {% if book.categories %}
                 <p><strong>Categories:</strong> {{ book.categories }}</p>
+                {% endif %}
+                {% if book.manufacturer %}
+                <p><strong>Manufacturer:</strong> {{ book.manufacturer }}</p>
                 {% endif %}
             </div>
 
@@ -68,9 +100,14 @@
                 {% if author_info.bio %}
                 <p>{{ author_info.bio }}</p>
                 {% endif %}
-                {% if author_info.wikipedia %}
-                <a href="{{ author_info.wikipedia }}" target="_blank" class="btn btn-outline-secondary">Read more on Wikipedia</a>
-                {% endif %}
+                <div class="author-links">
+                    {% if author_info.wikipedia %}
+                    <a href="{{ author_info.wikipedia }}" target="_blank" class="btn btn-outline-secondary me-2">Read on Wikipedia</a>
+                    {% endif %}
+                    {% if author_info.amazon_page %}
+                    <a href="{{ author_info.amazon_page }}" target="_blank" class="btn btn-warning">Author's Amazon Page</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -84,21 +121,33 @@
             <div class="reviews">
                 {% for review in reviews %}
                 <div class="review-card mb-3">
-                    <h5>{{ review.source }}</h5>
-                    {% if review.rating %}
-                    <div class="rating">
-                        <span class="stars">
-                            {% for _ in range(review.rating|int) %}⭐{% endfor %}
-                        </span>
-                        ({{ review.rating }}/5)
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                {% if review.source == 'Amazon' %}
+                                <img src="{{ url_for('static', filename='images/amazon-logo.png') }}" alt="Amazon" style="height: 20px;" class="me-2">
+                                {% endif %}
+                                {{ review.source }}
+                            </h5>
+                            {% if review.rating %}
+                            <div class="rating">
+                                <span class="stars">
+                                    {% for _ in range(review.rating|int) %}⭐{% endfor %}
+                                </span>
+                                ({{ review.rating }}/5)
+                            </div>
+                            {% endif %}
+                            {% if review.review_count %}
+                            <p>Based on {{ review.review_count }} reviews</p>
+                            {% endif %}
+                            {% if review.url %}
+                            <a href="{{ review.url }}" target="_blank" 
+                               class="btn btn-sm {% if review.source == 'Amazon' %}btn-warning{% else %}btn-outline-info{% endif %}">
+                                Read Reviews on {{ review.source }}
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
-                    {% endif %}
-                    {% if review.review_count %}
-                    <p>Based on {{ review.review_count }} reviews</p>
-                    {% endif %}
-                    {% if review.url %}
-                    <a href="{{ review.url }}" target="_blank" class="btn btn-sm btn-outline-info">Read Reviews</a>
-                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
