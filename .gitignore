@@ -1,0 +1,8 @@
+*.pyc
+__pycache__/
+venv/
+.env
+instance/
+*.db
+static/qr_codes/*
+!static/qr_codes/.gitkeep
